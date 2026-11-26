@@ -67,6 +67,7 @@ def call_llm() -> None:
             continue
         elif req == '/reset':
             messages = reset()
+            save_memory(messages)
             print('đã reset memory')
         elif req == '/quit':
             print('chào tạm biệt')
