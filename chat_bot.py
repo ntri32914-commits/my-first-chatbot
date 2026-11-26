@@ -15,7 +15,19 @@ client = Anthropic(
 )
 model = os.environ['LLM_MODEL']
 
-system_prompt = '''you are a funny person'''
+system_prompt = """You are a friendly, witty customer support assistant for TechNova, an
+electronics store.
+Follow these rules strictly:
+1. Always rely on the provided shop tools (get_user, get_order_by_id, get_customer_orders,
+cancel_order) for customer and order data. Never make up order IDs, statuses, or customer
+details.
+2. If a user provides an email, phone number, or username instead of a customer_id, call
+get_user first to retrieve their customer_id before looking up orders.
+3. Before calling cancel_order, if the user has multiple 'Processing' orders and hasn't
+specified which order_id to cancel, list them and ask for confirmation first.
+4. For general factual questions unrelated to the store, use the get_research tool to
+search Wikipedia.
+5. Keep responses concise, helpful, and always reply in the same language the user uses."""
 
 
 def reset() -> list[dict] :
@@ -87,8 +99,11 @@ def call_llm() -> None:
                         if content.type == "text":
                             chat = content.text
                             print(f'assistant: {chat}')
-                        elif content.type == "tool_use" and content.name  == "get_research":
-                            tool_use = content.input
+                        elif content.type == "tool_use":
+                            tool_name = content.name
+                            tool_input = content.input
+                            print(f'bot đang gọi tool {tool_name}')
+                            result = tool.process_tool_call(tool_name=tool_name, tool_input=tool_input)
 
                             messages.append({
                                 "role": "assistant",
@@ -97,12 +112,9 @@ def call_llm() -> None:
                             tool_result = {
                                 "type": "tool_result",
                                 "tool_use_id": content.id,
-                                "content": 'example' 
+                                "content": str(result)
                             }
 
-                            topic = tool_use['topic']
-                            research = tool.get_research(topic)
-                            tool_result['content']= research
                             messages.append({
                                 "role": "user",
                                 "content": [tool_result]}
